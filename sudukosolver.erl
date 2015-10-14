@@ -13,10 +13,10 @@ main() ->
  Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []).
 
-parse_board(Bin) when is_binary(Bin) ->
-parse_board(binary_to_list(Bin));
-parse_board(Str) when is_list(Str) ->
-[list_to_integer(X)||X <- string:tokens(Str,"\r\n\t ")].
+ parse_board(Bin) when is_binary(Bin) ->
+ parse_board(binary_to_list(Bin));
+ parse_board(Str) when is_list(Str) ->
+ [list_to_integer(X)||X <- string:tokens(Str,"\r\n\t ")].
 
 %% creates our tuples per item
 create_grid_map([],_, Acc) -> lists:reverse(Acc);
@@ -55,26 +55,29 @@ contains_value({{X,Y},_,_}, {Col,Row}) ->
  true -> false
  end. 
 
-%% get 3by3 grids. given a row.  we loop it and pattern match then ones we find.  the ones we dont we loop
-%% we need to exhaust something. ie the board.
-%%get_3by3_grids(X,Y, Board, Stack) ->
-  %% what to do? 
-  %% need to grab any element that has (X,Y), (X+1, Y), (X,Y+1), (X-1,Y), (X, Y-1), (X+1, Y+1), (X-1, Y-1), (X+1, Y-1), (X-1, y+1)
-  %% not really for now.   
+%%3by3 after paper analysis.  2,2 = start point. x= 2 then x || y = (x + 3) < 9.  simples.  i like functional langs.
+%% why did i not fight being thrown of course by Poli, i like prolog! stupid uni cunt accused me of cheating. heyho
+get_3by3_grids(_,_, [], Stack) -> lists:reverse(Stack);
+get_3by3_grids(X, Y, [Board|T], Stack) ->
+ Grid = [ %% not happening now.  lol.  bunk work and fix this.  
+ get_3by3_grids(X+2, Y T, [find_3d3_elements(Start, Start |Stack]).          
 
-%% so need to test... better stop work time better.
-%%get_3by3_grid(X,Y,[],Stack) -> lists:reverse(Stack);
-%%get_3by3_grid(X,Y,Value, Stack) -> [Value|Stack];
-%%get_3by3_grid(X+1,Y, Value, Stack) -> [Value|Stack];
-%%get_3by3_grid(X+1,Y+1, Value, Stack) -> [Value|Stack];
-%%get_3by3_grid(X-1,Y, Value, Stack) -> [Value|Stack];
-%%get_3by3_grid(X,Y-1, Value, Stack) -> [Value|Stack];
-%%get_3by3_grid(X+1,Y+1, Value, Stack) -> [Value|Stack];
-%%get_3by3_grid(X-1,Y-1, Value, Stack) -> [Value|Stack];
-%%get_3by3_grid(X+1,Y-1, Value, Stack) -> [Value|Stack];
-%%get_3by3_grid(X-1,Y+1, Value, Stack) -> [Value|Stack];
-%get_3by3_grid(X,Y,[Board|Tail], Stack) ->
-          
+
+%% need to find 3by 3.
+find_3by3_element(StartX,StartY,{X,Y}) ->
+ 
+ if X == StartX and Y == StartY -> true;
+    X == StartX+1 and Y == StartY -> true;
+    X == StartX-1 and Y == StartY -> true;
+    X == StartX and Y = StartY+1 -> true;
+    X == StartX and Y == StartY-1 -> true;
+    X == StartX-1 and Y == StartY+1 -> true;
+    X == StartX+1 and Y == StartY-1 -> true;
+    X == StartX+1 and Y == StartY+1 -> true;
+    X == StartX-1 and Y == StartY-1 -> true;
+    true -> false
+ end. 
+     
 
 %% some basic tests to ensure board is valid before starting
 test_board(Board) when length(Board) == 81 ->  "Ok";
