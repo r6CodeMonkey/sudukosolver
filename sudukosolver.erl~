@@ -8,14 +8,10 @@ main() ->
  Board = parse_board(Bin),
  test_Board(Board),
  GridMap = create_grid_map(Board, 1, []),
- %%print(GridMap),
- %%get_column_stack(1, GridMap, []),
- %% want a list of column lists, and a list of row lists
- Rows = get_rows(lists:seq(1,9), GridMap, []),
- Columns = get_columns(lists:seq(1,9), GridMap, []).
- %% need to create 3by3Grids.  more tricky, as they need a centre coord, then we can pattern match on it later on
- %% can pattern match on the tuple first element to find stack row ie {{1 etc.
- 
+ %%good bit. get our workable stacks.
+ Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
+ Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []).
+
 parse_board(Bin) when is_binary(Bin) ->
 parse_board(binary_to_list(Bin));
 parse_board(Str) when is_list(Str) ->
@@ -36,41 +32,13 @@ is_fixed(V) ->
   true -> "true"
   end.
 
-%% get a list of column stacks
-get_columns([],_, Stacks) -> lists:reverse(Stacks); 
-get_columns([C|T], Map, Stacks) ->
- get_columns(T,Map, [get_stack({C, -1}, Map,[])|Stacks]).
-%% get a list of row stacks
-get_rows([],_, Stacks) -> lists:reverse(Stacks);
-get_rows([C|T], Map, Stacks) ->
- get_rows(T, Map,[get_stack({-1, C}, Map,[]) |Stacks]).
-
-%% get 3by3 grids. given a row.  we loop it and pattern match then ones we find.  the ones we dont we loop
-%% we need to exhaust something. ie the board.
-get_3by3_grids(X,Y, Board, Stack) ->
-  %% what to do? 
-  %% need to grab any element that has (X,Y), (X+1, Y), (X,Y+1), (X-1,Y), (X, Y-1), (X+1, Y+1), (X-1, Y-1), (X+1, Y-1), (X-1, y+1)
-  %% not really for now.   
-
-%% so 
-get_3by3_grid(X,Y,[],Stack) -> lists:reverse(Stack);
-get_3by3_grid(X,Y,Value, Stack) -> [Value|Stack];
-get_3by3_grid(X+1,Y, Value, Stack) -> [Value|Stack];
-get_3by3_grid(X+1,Y+1, Value, Stack) -> [Value|Stack];
-get_3by3_grid(X-1,Y, Value, Stack) -> [Value|Stack];
-get_3by3_grid(X,Y-1, Value, Stack) -> [Value|Stack];
-get_3by3_grid(X+1,Y+1, Value, Stack) -> [Value|Stack];
-get_3by3_grid(X-1,Y-1, Value, Stack) -> [Value|Stack];
-get_3by3_grid(X+1,Y-1, Value, Stack) -> [Value|Stack];
-get_3by3_grid(X-1,Y+1, Value, Stack) -> [Value|Stack];
-
-
-get_3by3_grid(X,Y,[Board|Tail], Stack) ->
-   
- 
-
-
-
+%%helper function to stacks.
+get_stacks([],_,_,Stacks) -> lists:reverse(Stacks);
+get_stacks([C|T],Type, Map, Stacks) ->
+ if Type == "Columns" ->  get_stacks(T, Type, Map, [get_stack({C, -1}, Map,[])|Stacks]);
+    Type == "Rows" ->  get_stacks(T,Type, Map, [get_stack({-1, C}, Map,[])|Stacks]);
+    true -> erlang:error("non supported type")
+ end.
 
 get_stack(_,[], Stack) -> lists:reverse(Stack);
 get_stack(Exp, [Map|T], Stack) ->
@@ -85,6 +53,31 @@ contains_value({{X,Y},_,_}, {Col,Row}) ->
     Y == Row -> true;
  true -> false
  end. 
+
+%% get 3by3 grids. given a row.  we loop it and pattern match then ones we find.  the ones we dont we loop
+%% we need to exhaust something. ie the board.
+%%get_3by3_grids(X,Y, Board, Stack) ->
+  %% what to do? 
+  %% need to grab any element that has (X,Y), (X+1, Y), (X,Y+1), (X-1,Y), (X, Y-1), (X+1, Y+1), (X-1, Y-1), (X+1, Y-1), (X-1, y+1)
+  %% not really for now.   
+
+%% so need to test... better stop work time better.
+%%get_3by3_grid(X,Y,[],Stack) -> lists:reverse(Stack);
+%%get_3by3_grid(X,Y,Value, Stack) -> [Value|Stack];
+%%get_3by3_grid(X+1,Y, Value, Stack) -> [Value|Stack];
+%%get_3by3_grid(X+1,Y+1, Value, Stack) -> [Value|Stack];
+%%get_3by3_grid(X-1,Y, Value, Stack) -> [Value|Stack];
+%%get_3by3_grid(X,Y-1, Value, Stack) -> [Value|Stack];
+%%get_3by3_grid(X+1,Y+1, Value, Stack) -> [Value|Stack];
+%%get_3by3_grid(X-1,Y-1, Value, Stack) -> [Value|Stack];
+%%get_3by3_grid(X+1,Y-1, Value, Stack) -> [Value|Stack];
+%%get_3by3_grid(X-1,Y+1, Value, Stack) -> [Value|Stack];
+
+
+%get_3by3_grid(X,Y,[Board|Tail], Stack) ->
+   
+
+
        
 %% some basic tests to ensure board is valid before starting
 test_Board(Board) when length(Board) == 81 ->  "Ok";
