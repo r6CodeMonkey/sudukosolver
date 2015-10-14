@@ -6,7 +6,8 @@ main() ->
  {ok,Bin} = file:read_file(File),
 
  Board = parse_board(Bin),
- test_Board(Board),
+ test_board(Board),
+
  GridMap = create_grid_map(Board, 1, []),
  %%good bit. get our workable stacks.
  Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
@@ -76,9 +77,9 @@ contains_value({{X,Y},_,_}, {Col,Row}) ->
           
 
 %% some basic tests to ensure board is valid before starting
-test_Board(Board) when length(Board) == 81 ->  "Ok";
-test_Board(Board) when length(Board) < 81 -> erlang:error("Board too small");
-test_Board(Board) when length(Board) > 81 -> erlang:error("Board too large").
+test_board(Board) when length(Board) == 81 ->  "Ok";
+test_board(Board) when length(Board) < 81 -> erlang:error("Board too small");
+test_board(Board) when length(Board) > 81 -> erlang:error("Board too large").
    
 %% print function for testing
 print([]) ->  io:format("End ~n", []);
