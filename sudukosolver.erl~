@@ -14,7 +14,7 @@ parse_board(Str) when is_list(Str) ->
 [list_to_integer(X)||X <- string:tokens(Str,"\r\n ")].
 
 
-%% we now want to create grid map
+%% we now want to create grid map  this is fucking wrong wake the fuck up
 create_grid_map([],_, Acc) -> lists:reverse(Acc);
 create_grid_map(Board, X, Acc) ->  
  Row = create_row(hd(Board), X, 1),
@@ -24,7 +24,12 @@ create_grid_map(Board, X, Acc) ->
 %% so its only hitting the other case.  so that is wrong
 %% basically we cant bump the X fo some fucking reason.
 create_row([H|T], X, Y) ->
-  {{X,Y}, H} ++ create_row(T, X, Y+1).
+  {{X,Y}, H} ++ create_row(T, X, Y+1);
+create_row(H, _,1) -> {{"fuck", 1},H}.
+% keep hitting fucking 2,1,1 which is the final fucking case.....i am going to kill myself.
+
+
+%% see your fucking notes...something is very very wrong.  ie its retarded and hits the dumbass case over and over.
 
 
 
