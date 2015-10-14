@@ -45,6 +45,33 @@ get_rows([],_, Stacks) -> lists:reverse(Stacks);
 get_rows([C|T], Map, Stacks) ->
  get_rows(T, Map,[get_stack({-1, C}, Map,[]) |Stacks]).
 
+%% get 3by3 grids. given a row.  we loop it and pattern match then ones we find.  the ones we dont we loop
+%% we need to exhaust something. ie the board.
+get_3by3_grids(X,Y, Board, Stack) ->
+  %% what to do? 
+  %% need to grab any element that has (X,Y), (X+1, Y), (X,Y+1), (X-1,Y), (X, Y-1), (X+1, Y+1), (X-1, Y-1), (X+1, Y-1), (X-1, y+1)
+  %% not really for now.   
+
+%% so 
+get_3by3_grid(X,Y,[],Stack) -> lists:reverse(Stack);
+get_3by3_grid(X,Y,Value, Stack) -> [Value|Stack];
+get_3by3_grid(X+1,Y, Value, Stack) -> [Value|Stack];
+get_3by3_grid(X+1,Y+1, Value, Stack) -> [Value|Stack];
+get_3by3_grid(X-1,Y, Value, Stack) -> [Value|Stack];
+get_3by3_grid(X,Y-1, Value, Stack) -> [Value|Stack];
+get_3by3_grid(X+1,Y+1, Value, Stack) -> [Value|Stack];
+get_3by3_grid(X-1,Y-1, Value, Stack) -> [Value|Stack];
+get_3by3_grid(X+1,Y-1, Value, Stack) -> [Value|Stack];
+get_3by3_grid(X-1,Y+1, Value, Stack) -> [Value|Stack];
+
+
+get_3by3_grid(X,Y,[Board|Tail], Stack) ->
+   
+ 
+
+
+
+
 get_stack(_,[], Stack) -> lists:reverse(Stack);
 get_stack(Exp, [Map|T], Stack) ->
  Resp = contains_value(Map,Exp),
