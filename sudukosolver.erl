@@ -9,16 +9,17 @@ main() ->
  test_Board(Board),
  GridMap = create_grid_map(Board, 1, []),
  %%print(GridMap),
- get_column_stack(1, GridMap, []),
- get_row_stack(1, GridMap, []).
+ %%get_column_stack(1, GridMap, []),
+ %% want a list of column lists, and a list of row lists
+ Rows = get_rows(lists:seq(1,9), GridMap, []),
+ Columns = get_columns(lists:seq(1,9), GridMap, []).
  
-
-
 parse_board(Bin) when is_binary(Bin) ->
 parse_board(binary_to_list(Bin));
 parse_board(Str) when is_list(Str) ->
 [list_to_integer(X)||X <- string:tokens(Str,"\r\n\t ")].
 
+%% creates our tuples per item
 create_grid_map([],_, Acc) ->
    lists:reverse(Acc);
 create_grid_map([B1, B2, B3, B4, B5, B6, B7, B8, B9|Rest], Y, Acc) ->
@@ -27,40 +28,39 @@ create_grid_map([B1, B2, B3, B4, B5, B6, B7, B8, B9|Rest], Y, Acc) ->
 
 create_row([],_,_,Acc) -> Acc;
 create_row([R|T], X, Y, Acc) ->
-  create_row(T, X+1, Y, [{{X,Y}, R} | Acc]).
+  create_row(T, X+1, Y, [{{X,Y}, R, is_fixed(R)} | Acc]).
  
+is_fixed(V) -> 
+ if V == 0 ->
+    "false";
+  true -> "true"
+  end.
 
-get_column_stack(_, [], Stack) -> lists:reverse(Stack);
-get_column_stack(Col, [Map|T], Stack) ->
- Resp = contains_col_value(Map,  Col),
- if  Resp == true ->
-  get_column_stack(Col, T, [get_value(Map)|Stack]);
-  true -> get_column_stack(Col, T,Stack)
-  end.
-  
-get_row_stack(_, [], Stack) -> lists:reverse(Stack);
-get_row_stack(Col, [Map|T], Stack) ->
- Resp = contains_row_value(Map,  Col),
- if  Resp == true ->
-  get_row_stack(Col, T, [get_value(Map)|Stack]);
-  true -> get_row_stack(Col, T,Stack)
-  end.
-  
-%%get_3by3_grid(_,_,[])  
-%%get_3by3_grid(CentreRow, CentreCol, Map, Stack) ->  
-  
-    
-contains_col_value({{X,_},_}, Col) ->
-  if X == Col -> true;
-  true -> false
-  end.
-  
-contains_row_value({{_,Y},_}, Col) ->
-  if Y == Col -> true;
-  true -> false
-  end.
-  
-get_value({{_,_},V}) -> V.  
+%% get a list of column stacks
+get_columns([],_, Stacks) -> lists:reverse(Stacks);
+get_columns([C|T], Map, Stacks) ->
+ get_columns(T, Map, [get_stack({C, -1}, Map,[]) |Stacks]).
+
+%% get a list of row stacks
+get_rows([],_, Stacks) -> lists:reverse(Stacks);
+get_rows([C|T], Map, Stacks) ->
+ get_rows(T, Map, [get_stack({-1, C}, Map,[]) |Stacks]).
+
+
+get_stack(_,[], Stack) -> lists:reverse(Stack);
+get_stack(Exp, [Map|T], Stack) ->
+ Resp = contains_value(Map,Exp),
+ if Resp == true ->
+  get_stack(Exp, T, [Map|Stack]);
+ true -> get_stack(Exp, T, Stack)
+ end. 
+
+contains_value({{X,Y},_,_}, {Col,Row}) ->
+ if X == Col -> true;
+    Y == Row -> true;
+ true -> false
+ end. 
+       
   
 %% some basic tests to ensure board is valid before starting
 test_Board(Board) when length(Board) == 81 ->
@@ -74,8 +74,8 @@ test_Board(Board) when length(Board) > 81 ->
 %% print function for testing
 print([]) ->  io:format("End ~n", []);
 print([GridMap|T]) ->
-{{X,Y},V} = GridMap,
- io:format("Value is ~w For Cell ~w  ~w ~n", [V,X,Y]),
+{{X,Y},V,F} = GridMap,
+ io:format("Value is ~w For Cell ~w  ~w , fixed = ~s ~n", [V,X,Y,F]),
  print(T). 
  
 
