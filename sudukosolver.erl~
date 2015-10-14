@@ -13,10 +13,10 @@ main() ->
  Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []).
 
-parse_board(Bin) when is_binary(Bin) ->
-parse_board(binary_to_list(Bin));
-parse_board(Str) when is_list(Str) ->
-[list_to_integer(X)||X <- string:tokens(Str,"\r\n\t ")].
+ parse_board(Bin) when is_binary(Bin) ->
+ parse_board(binary_to_list(Bin));
+ parse_board(Str) when is_list(Str) ->
+ [list_to_integer(X)||X <- string:tokens(Str,"\r\n\t ")].
 
 %% creates our tuples per item
 create_grid_map([],_, Acc) -> lists:reverse(Acc);
