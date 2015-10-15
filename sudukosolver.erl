@@ -11,7 +11,8 @@ main() ->
  GridMap = create_grid_map(Board, 1, []),
  %%good bit. get our workable stacks.
  Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
- Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []).
+ Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []),
+ Grids = get_3by3_grids(2, GridMap, []).
 
  parse_board(Bin) when is_binary(Bin) -> parse_board(binary_to_list(Bin));
  parse_board(Str) when is_list(Str) -> [list_to_integer(X)||X <- string:tokens(Str,"\r\n\t ")].
@@ -53,26 +54,30 @@ contains_value({{X,Y},_,_}, {Col,Row}) ->
  true -> false
  end. 
 
-%%3by3 after paper analysis.  2,2 = start point. x= 2 then x || y = (x + 3) < 9.  simples.  i like functional langs.
-%% why did i not fight being thrown of course by Poli, i like prolog! stupid uni cunt accused me of cheating. heyho
-get_3by3_grids(_,_, [], Stack) -> lists:reverse(Stack);
-get_3by3_grids(X, Y, [Board|T], Stack) ->
- Grid = [ %% not happening now.  lol.  bunk work and fix this.  
- get_3by3_grids(X+2, Y T, [find_3d3_elements(Start, Start |Stack]).          
+get_3by3_grids(11, _, Stack) -> lists:reverse(Stack);
+get_3by3_grids(X, Board, Stack) ->
+ get_3by3_grids(X+3, Board, [get_grids(X,8, Board, []), get_grids(X,5, Board, []), get_grids(X,2, Board, []) | Stack]).
+
+get_grids(_,_, [], Stack) -> lists:reverse(Stack);
+get_grids(X, Y, [Board|T], Stack) ->
+ Resp = find_3by3_element(X, Y, Board),
+ if  Resp == true -> get_grids(X, Y, T, [ Board |Stack]);
+  true -> get_grids(X,Y,T, Stack)
+ end.
 
 
 %% need to find 3by 3.
-find_3by3_element(StartX,StartY,{X,Y}) ->
+find_3by3_element(StartX,StartY,{{X,Y},V,F}) ->
  
- if X == StartX and Y == StartY -> true;
-    X == StartX+1 and Y == StartY -> true;
-    X == StartX-1 and Y == StartY -> true;
-    X == StartX and Y = StartY+1 -> true;
-    X == StartX and Y == StartY-1 -> true;
-    X == StartX-1 and Y == StartY+1 -> true;
-    X == StartX+1 and Y == StartY-1 -> true;
-    X == StartX+1 and Y == StartY+1 -> true;
-    X == StartX-1 and Y == StartY-1 -> true;
+ if X == StartX, Y == StartY -> true;
+    X == StartX+1, Y == StartY -> true;
+    X == StartX-1, Y == StartY -> true;
+    X == StartX, Y == StartY+1 -> true;
+    X == StartX, Y == StartY-1 -> true;
+    X == StartX-1, Y == StartY+1 -> true;
+    X == StartX+1, Y == StartY-1 -> true;
+    X == StartX+1, Y == StartY+1 -> true;
+    X == StartX-1, Y == StartY-1 -> true;
     true -> false
  end. 
      
