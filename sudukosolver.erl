@@ -13,8 +13,12 @@ main() ->
  Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []),
  Grids = get_3by3_grids(2, GridMap, []),
- pretty_print(GridMap).
+ print(Columns),
+ pretty_print(GridMap),
+ solve(Rows, Columns, Grids, []).
+ %%pretty_print(GridMap).
 
+%%load the board 
  parse_board(Bin) when is_binary(Bin) -> parse_board(binary_to_list(Bin));
  parse_board(Str) when is_list(Str) -> [list_to_integer(X)||X <- string:tokens(Str,"\r\n\t ")].
 
@@ -55,6 +59,7 @@ contains_value({{X,Y},_,_}, {Col,Row}) ->
  true -> false
  end. 
 
+%% help function to get our 3by3 grids
 get_3by3_grids(11, _, Stack) -> lists:reverse(Stack);
 get_3by3_grids(X, Board, Stack) ->
  get_3by3_grids(X+3, Board, [get_grids(X,8, Board, []), get_grids(X,5, Board, []), get_grids(X,2, Board, []) | Stack]).
@@ -81,7 +86,52 @@ find_3by3_element(StartX,StartY,{{X,Y},_,_}) ->
     X == StartX-1, Y == StartY-1 -> true;
     true -> false
  end. 
-     
+
+
+
+%% filter grids by row
+filter_grids_by_row([], _, Filter) -> lists:reverse(Filter);
+filter_grids_by_row([CellX, CellY, CellZ|Tail], Grids, Filter) ->
+  %% to review seems to work of sorts. wont work for the grids in tail...fix later on.
+ filter_grids_by_row(Tail, Grids, [filter_by_cell(Grids, CellX, [])|Filter]).
+
+%% filter list of lists by a cell
+filter_by_cell([], _, Filter) -> lists:reverse(Filter);
+filter_by_cell([List|Tail], Cell, Filter) ->
+  Res = lists:any(fun(X) -> X == Cell end,List),
+  if Res == true ->  filter_by_cell(Tail, Cell, List);
+  true -> filter_by_cell(Tail, Cell, Filter) 
+  end.
+
+%% logic section.
+solve(Rows, Columns, Grids, Solution) -> 
+ %% functions required. Firstly we need an exit case.
+ %% test out row 1.. and its matching columns, and grids...then go crazy with the full board.
+ %% for 1 row, all columns are applicable.  And vice versa, grids are only those grids that contain the row elements
+ Checking = test_solution(hd(Rows), Columns, filter_grids_by_row(hd(Rows), Grids, []),  []).
+
+%% test row solution
+test_solution([],_,_, Solution) -> lists:reverse(Solution);
+test_solution([Row|T], Columns, Grids, Solution) -> 
+ {{X,Y},V,F} = Row,
+ if F == "false", V == 0 -> 
+   Unique = get_unique_value(lists:seq(1,9),Solution,
+                 filter_by_cell(Columns, Row, []),
+                 filter_by_cell(Grids, Row, []), {{X,Y},V,F}),
+   %% given this we now need to check against our column....
+   test_solution(T,Columns, Grids, [Unique|Solution]); 
+   true -> test_solution(T, Columns, Grids, [Row|Solution])
+ end.
+
+%% get a unique value to the solution we need to add our unique column and grid (we can only be in one of each).
+get_unique_value([],_,_,_,NewValue) -> NewValue;
+get_unique_value([Value|Rest], Solution, Column, Grid, NewValue) -> 
+ {{X,Y},V,F} = NewValue,
+ Res = lists:any(fun({{X,Y},V,F}) -> V == Value end, lists:append(lists:append(Column, Solution),Grid)),
+   if Res == false -> 
+   get_unique_value(Rest, Solution, Column, Grid, {{X,Y},Value,F});
+   true -> get_unique_value(Rest, Solution, Column, Grid, NewValue)
+  end.
 
 %% some basic tests to ensure board is valid before starting
 test_board(Board) when length(Board) == 81 ->  "Ok";
@@ -91,9 +141,18 @@ test_board(Board) when length(Board) > 81 -> erlang:error("Board too large").
 %% print function for testing
 print([]) ->  io:format("End ~n", []);
 print([GridMap|T]) ->
-{{X,Y},V,F} = GridMap,
+ sub_print(GridMap),
+ print(T).
+%% List = GridMap,
+%%{{X,Y},V,F} = hd(GridMap),
+%% io:format("Value is ~w For Cell ~w  ~w , fixed = ~s ~n", [V,X,Y,F]),
+%% print(T). 
+
+sub_print([]) ->  io:format("End ~n", []);
+sub_print([H|T]) ->
+ {{X,Y},V,F} = H,
  io:format("Value is ~w For Cell ~w  ~w , fixed = ~s ~n", [V,X,Y,F]),
- print(T). 
+ sub_print(T).
 
 %% pretty print
 pretty_print([]) -> io:format(" ",[]);
