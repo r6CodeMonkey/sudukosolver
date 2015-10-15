@@ -13,9 +13,10 @@ main() ->
  Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []),
  Grids = get_3by3_grids(2, GridMap, []),
- print(Columns),
+ %%print(Columns),
  pretty_print(GridMap),
- solve(Rows, Columns, Grids, []).
+ Solution = solve(Rows, Columns, Grids, []),
+ solution_pretty_print(Solution).
  %%pretty_print(GridMap).
 
 %%load the board 
@@ -104,33 +105,57 @@ filter_by_cell([List|Tail], Cell, Filter) ->
   end.
 
 %% logic section.
-solve(Rows, Columns, Grids, Solution) -> 
+solve([],_,_,Solution) -> lists:reverse(Solution);
+solve([Row|Tail], Columns, Grids, Solution) -> 
  %% functions required. Firstly we need an exit case.
  %% test out row 1.. and its matching columns, and grids...then go crazy with the full board.
  %% for 1 row, all columns are applicable.  And vice versa, grids are only those grids that contain the row elements
- Checking = test_solution(hd(Rows), Columns, filter_grids_by_row(hd(Rows), Grids, []),  []).
+ %% once row 1 is done, need to update the data, in order for the solution to be factored in for the next check.  not for today.
+ RowSolution = test_solution(Row, Row, Columns, filter_grids_by_row(Row, Grids, []),  []),
+%% solve(Tail, Columns, Grids, [RowSolution|Solution]).
+ solve(Tail, update_solution(RowSolution, Columns, []), update_solution(RowSolution, Grids, []), [RowSolution|Solution]).
+
+
+%% update with solution
+update_solution([],Map, Acc) -> lists:reverse(Acc); 
+update_solution([Solution|RowSolution], [Map|Rest], Acc) ->
+ %% we have a list of lists.
+ update_solution(RowSolution, Rest, [update_map(Map, Solution, [])|Acc]).
+ 
+update_map([], _, Acc) -> lists:reverse(Acc);
+update_map([Map|T], {{Sx,Sy},Sv,Sf}, Acc) ->
+  update_map(T, {{Sx,Sy},Sv,Sf}, [update_cell(Map,{{Sx,Sy},Sv,Sf})|Acc]).
+
+update_cell({{X,Y},V,F}, {{Sx,Sy},Sv,Sf}) ->
+ if {X,Y} == {Sx,Sy} -> {{Sx,Sy},Sv,Sf};
+ true -> {{X,Y},V,F}
+ end.
+
 
 %% test row solution
-test_solution([],_,_, Solution) -> lists:reverse(Solution);
-test_solution([Row|T], Columns, Grids, Solution) -> 
+test_solution([],_,_,_, Solution) -> lists:reverse(Solution);
+test_solution([Row|T], Fixed, Columns, Grids, Solution) -> 
  {{X,Y},V,F} = Row,
  if F == "false", V == 0 -> 
-   Unique = get_unique_value(lists:seq(1,9),Solution,
+   Unique = get_unique_value(lists:seq(1,9),Fixed, Solution,
                  filter_by_cell(Columns, Row, []),
                  filter_by_cell(Grids, Row, []), {{X,Y},V,F}),
    %% given this we now need to check against our column....
-   test_solution(T,Columns, Grids, [Unique|Solution]); 
-   true -> test_solution(T, Columns, Grids, [Row|Solution])
+   test_solution(T, Fixed, Columns, Grids, [Unique|Solution]); 
+   true -> test_solution(T,Fixed, Columns, Grids, [Row|Solution])
  end.
 
 %% get a unique value to the solution we need to add our unique column and grid (we can only be in one of each).
-get_unique_value([],_,_,_,NewValue) -> NewValue;
-get_unique_value([Value|Rest], Solution, Column, Grid, NewValue) -> 
+get_unique_value([],_,_,_,_,NewValue) -> NewValue;
+get_unique_value([Value|Rest], Row, Solution, Column, Grid, NewValue) -> 
  {{X,Y},V,F} = NewValue,
- Res = lists:any(fun({{X,Y},V,F}) -> V == Value end, lists:append(lists:append(Column, Solution),Grid)),
+ Res = lists:any(fun({{X,Y},V,F}) -> V == Value end, lists:append([Column, Solution,Grid, Row])),
    if Res == false -> 
-   get_unique_value(Rest, Solution, Column, Grid, {{X,Y},Value,F});
-   true -> get_unique_value(Rest, Solution, Column, Grid, NewValue)
+%%   io:format("{~w,~w} value will be set to ~w ~n",[X,Y,Value]),
+   get_unique_value([],Row, Solution, Column, Grid, {{X,Y},Value,F});
+   true -> 
+%%    io:format("{~w,~w} no match value will be set to ~w ~n",[X,Y,0]),
+    get_unique_value(Rest,Row, Solution, Column, Grid, {{X,Y},0,F})
   end.
 
 %% some basic tests to ensure board is valid before starting
@@ -159,6 +184,8 @@ pretty_print([]) -> io:format(" ",[]);
 pretty_print([GridMap|T]) when length(T) == 80  ->
  {{_,_},V,F} = GridMap,
  io:format("------------------------------------ ~n",[]),
+ io:format("|            Start Grid             | ~n",[]),
+ io:format("------------------------------------ ~n",[]),
  if F == "true" -> io:format("| ~w ", [V]);
   true -> io:format("|  ", [])
   end,   
@@ -175,6 +202,31 @@ pretty_print([GridMap|T]) ->
  true -> io:format("|   ", [])
  end,   
  pretty_print(T).
+
+solution_pretty_print([]) -> io:format("------------------------------------ ~n",[]);
+solution_pretty_print([Solution|T]) when length(T) == 8 -> 
+  io:format("------------------------------------ ~n",[]),
+  io:format("|        SOLUTION                   |~n",[]),
+  io:format("------------------------------------ ~n",[]),
+  sol_pp_helper(Solution),
+  solution_pretty_print(T);
+solution_pretty_print([Solution|T]) ->
+  io:format("------------------------------------ ~n",[]),
+  sol_pp_helper(Solution),
+  solution_pretty_print(T).
+
+sol_pp_helper([]) -> io:format("|~n",[]);
+sol_pp_helper([Sol|T]) ->
+  {{_,_},V,_} = Sol,
+  io:format("| ~w ",[V]),
+  sol_pp_helper(T).
+
+%%test_solution_validity([]) -> io:format("~n",[]);
+%%test_solution_validity(Solution) ->
+ %% need to test each row, then each column, then each grid.  bit of a pain seeing as its bust.
+
+
+
  
 
 
