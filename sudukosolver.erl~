@@ -12,7 +12,8 @@ main() ->
  %%good bit. get our workable stacks.
  Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []),
- Grids = get_3by3_grids(2, GridMap, []).
+ Grids = get_3by3_grids(2, GridMap, []),
+ pretty_print(GridMap).
 
  parse_board(Bin) when is_binary(Bin) -> parse_board(binary_to_list(Bin));
  parse_board(Str) when is_list(Str) -> [list_to_integer(X)||X <- string:tokens(Str,"\r\n\t ")].
@@ -67,7 +68,7 @@ get_grids(X, Y, [Board|T], Stack) ->
 
 
 %% need to find 3by 3.
-find_3by3_element(StartX,StartY,{{X,Y},V,F}) ->
+find_3by3_element(StartX,StartY,{{X,Y},_,_}) ->
  
  if X == StartX, Y == StartY -> true;
     X == StartX+1, Y == StartY -> true;
@@ -93,6 +94,28 @@ print([GridMap|T]) ->
 {{X,Y},V,F} = GridMap,
  io:format("Value is ~w For Cell ~w  ~w , fixed = ~s ~n", [V,X,Y,F]),
  print(T). 
+
+%% pretty print
+pretty_print([]) -> io:format(" ",[]);
+pretty_print([GridMap|T]) when length(T) == 80  ->
+ {{_,_},V,F} = GridMap,
+ io:format("------------------------------------ ~n",[]),
+ if F == "true" -> io:format("| ~w ", [V]);
+  true -> io:format("|  ", [])
+  end,   
+ pretty_print(T);
+pretty_print([GridMap|T]) when length(T) rem 9 == 0  ->
+ {{_,_},V,F} = GridMap,
+ if F == "true" -> io:format(" ~w | ~n------------------------------------ ~n", [V]);
+ true ->   io:format("   | ~n------------------------------------ ~n", [])
+ end, 
+ pretty_print(T);
+pretty_print([GridMap|T]) ->
+ {{_,_},V,F} = GridMap,
+ if F == "true" -> io:format("| ~w ", [V]);
+ true -> io:format("|   ", [])
+ end,   
+ pretty_print(T).
  
 
 
