@@ -14,7 +14,7 @@ main() ->
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []),
  Grids = get_3by3_grids(2, GridMap, []),
  sudukoutils:pretty_print(GridMap),
- Solution = solve(Grids, Rows, Columns, []),
+ Solution = solve(Grids, Rows, Columns, [], 1),
  %% need to covert grids to rows again.  annoying.
  sudukoutils:solution_pretty_print(Solution).
 
@@ -100,8 +100,9 @@ filter_by_cell([List|Tail], Cell, Filter) ->
   end.
 
 %% logic section.
-solve([],_,_,Solution) -> lists:reverse(Solution);
-solve([Grid|Tail], Rows, Columns, Solution) -> 
+solve([],Rows,Columns,Solution,Counter) when Counter < 11 -> solve(lists:reverse(Solution), Rows, Columns, [], Counter+1);
+solve([],_,_,Solution, Counter) when Counter == 11 -> lists:reverse(Solution);
+solve([Grid|Tail], Rows, Columns, Solution, Counter) -> 
 GridOptions = test_grids(Grid, Grid, Rows, Columns, []),
 UniqueValues = unique_grid_solution_values(lists:seq(1,9),grid_solution_values(GridOptions, []),[]),
 Cell = find_unique_cell(UniqueValues, GridOptions, []),
@@ -109,7 +110,7 @@ Cell = find_unique_cell(UniqueValues, GridOptions, []),
 UpdatedRows = update_maps(Rows, Cell, []),
 UpdatedColumns = update_maps(Columns, Cell, []),
 UpdatedGrid = update_map(Grid, Cell, []),
-solve(Tail,UpdatedRows, UpdatedColumns, [UpdatedGrid|Solution]).
+solve(Tail,UpdatedRows, UpdatedColumns, [UpdatedGrid|Solution], Counter).
 
 %%
 grid_solution_values([], Acc) -> lists:reverse(Acc);
