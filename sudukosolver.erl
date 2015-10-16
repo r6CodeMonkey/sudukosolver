@@ -111,7 +111,7 @@ solve([],Grids, Rows,Columns, Solution, Counter)  ->
 solve([Grid|Tail],Grids, Rows, Columns, Solution, Counter) -> 
 GridOptions = test_grids(Grid, Grid, Rows, Columns, []),
 UniqueValues = option_grid_solution_values(lists:seq(1,9),grid_solution_values(GridOptions, []),1,[]),
-Cell = find_option_cell(UniqueValues, GridOptions, []),
+Cell = find_option_cell(UniqueValues, GridOptions,[]),
 
 UpdatedRows = update_maps(Rows, Cell, []),
 UpdatedColumns = update_maps(Columns, Cell, []),
@@ -121,7 +121,10 @@ UpdatedGrid = update_map(Grid, Cell, []),
 PairValues = option_grid_solution_values(lists:seq(1,9),grid_solution_values(GridOptions, []),2,[]),
 Pairs = find_option_cell(PairValues, GridOptions, []),
 
-%%Res = pair_evaluation([hd(Pairs)], Grids, UpdatedRows, UpdatedColumns, PairValues),
+%%if length(Pairs) > 2 ->
+%% Res = pair_evaluation(PairValues, Grids, UpdatedRows, UpdatedColumns, Pairs);
+%%true -> ok
+%%end,
 
 solve(Tail,[UpdatedGrid|Tail], UpdatedRows, UpdatedColumns, [UpdatedGrid|Solution], Counter).
 
@@ -143,7 +146,7 @@ count_grid_zeros([Grid|Tail], Counter) ->
 %% pair evaluation. see above.  return the cell we update, or nothing.
 pair_evaluation(_,_,_,_,[]) -> 0;
 %% this does not work.  but its nearly ready.  pairs can be more than 1 cell it seems.
-pair_evaluation(Pair, Grids, Rows, Columns, [{{CellX, CellY},_,_},{{PairCellX, PairCellY},_,_}|T]) ->
+pair_evaluation(Pair, Grids, Rows, Columns, [{{CellX,CellX},_,_},{{PairCellX,PairCellY},_,_}]) ->
  Direction = "horizontal",
  if CellX == PairCellX -> Direction = "vertical";
   true -> Direction = "horizontal"
