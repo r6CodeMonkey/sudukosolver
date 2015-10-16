@@ -14,7 +14,8 @@ main() ->
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []),
  Grids = get_3by3_grids(2, GridMap, []),
  sudukoutils:pretty_print(GridMap),
- Solution = solve(Grids, Rows, Columns, [], 1),
+ Solution = solve(Grids, Rows, Columns, [], count_zeros(Grids, 0)),
+ %%solve(Grids, Rows, Columns, [], count_zeros(Grids, 0)).
  %% need to covert grids to rows again.  annoying.
  sudukoutils:solution_pretty_print(Solution).
 
@@ -99,9 +100,15 @@ filter_by_cell([List|Tail], Cell, Filter) ->
   true -> filter_by_cell(Tail, Cell, Filter) 
   end.
 
+    
+
 %% logic section.
-solve([],Rows,Columns,Solution,Counter) when Counter < 11 -> solve(lists:reverse(Solution), Rows, Columns, [], Counter+1);
-solve([],_,_,Solution, Counter) when Counter == 11 -> lists:reverse(Solution);
+solve([],Rows,Columns, Solution, Counter)  -> 
+ ZeroCounter = count_zeros(Solution, 0) ,
+ if ZeroCounter < Counter -> 
+  solve(Solution, Rows, Columns,[], ZeroCounter);
+   true -> lists:reverse(Solution)
+ end;
 solve([Grid|Tail], Rows, Columns, Solution, Counter) -> 
 GridOptions = test_grids(Grid, Grid, Rows, Columns, []),
 UniqueValues = unique_grid_solution_values(lists:seq(1,9),grid_solution_values(GridOptions, []),[]),
@@ -110,7 +117,22 @@ Cell = find_unique_cell(UniqueValues, GridOptions, []),
 UpdatedRows = update_maps(Rows, Cell, []),
 UpdatedColumns = update_maps(Columns, Cell, []),
 UpdatedGrid = update_map(Grid, Cell, []),
+
 solve(Tail,UpdatedRows, UpdatedColumns, [UpdatedGrid|Solution], Counter).
+
+
+%% function to calculate number of 0s in board
+count_zeros([], Counter) -> Counter;
+count_zeros([Grid|Tail], Counter) ->
+ count_zeros(Tail, count_grid_zeros(Grid, Counter)).
+
+count_grid_zeros([], Counter) -> Counter;
+count_grid_zeros([Grid|Tail], Counter) ->
+ {{X,Y},V,F} = Grid,
+ if V == 0 -> count_grid_zeros(Tail, Counter+1);
+ true -> count_grid_zeros(Tail, Counter)
+ end.
+
 
 %%
 grid_solution_values([], Acc) -> lists:reverse(Acc);
