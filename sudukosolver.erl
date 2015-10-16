@@ -1,8 +1,7 @@
 -module(sudukosolver).
 -compile(export_all).
 
-main() ->
- File = "suduko.txt",
+main(File) ->
  {ok,Bin} = file:read_file(File),
 
  Board = sudukoutils:parse_board(Bin),
@@ -14,7 +13,7 @@ main() ->
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []),
  Grids = get_3by3_grids(2, GridMap, []),
  sudukoutils:pretty_print(GridMap),
- Solution = solve(Grids, Rows, Columns, [], count_zeros(Grids, 0)),
+ Solution = solve(Grids, Grids, Rows, Columns, [], count_zeros(Grids, 0)),
  %%solve(Grids, Rows, Columns, [], count_zeros(Grids, 0)).
  %% need to covert grids to rows again.  annoying.
  sudukoutils:solution_pretty_print(Solution).
@@ -103,23 +102,30 @@ filter_by_cell([List|Tail], Cell, Filter) ->
     
 
 %% logic section.
-solve([],Rows,Columns, Solution, Counter)  -> 
+solve([],Grids, Rows,Columns, Solution, Counter)  -> 
  ZeroCounter = count_zeros(Solution, 0) ,
  if ZeroCounter < Counter -> 
-  solve(Solution, Rows, Columns,[], ZeroCounter);
+  solve(Solution, Grids, Rows, Columns,[], ZeroCounter);
    true -> lists:reverse(Solution)
  end;
-solve([Grid|Tail], Rows, Columns, Solution, Counter) -> 
+solve([Grid|Tail],Grids, Rows, Columns, Solution, Counter) -> 
 GridOptions = test_grids(Grid, Grid, Rows, Columns, []),
-UniqueValues = unique_grid_solution_values(lists:seq(1,9),grid_solution_values(GridOptions, []),[]),
-Cell = find_unique_cell(UniqueValues, GridOptions, []),
+UniqueValues = option_grid_solution_values(lists:seq(1,9),grid_solution_values(GridOptions, []),1,[]),
+Cell = find_option_cell(UniqueValues, GridOptions, []),
 
 UpdatedRows = update_maps(Rows, Cell, []),
 UpdatedColumns = update_maps(Columns, Cell, []),
 UpdatedGrid = update_map(Grid, Cell, []),
 
-solve(Tail,UpdatedRows, UpdatedColumns, [UpdatedGrid|Solution], Counter).
 
+PairValues = option_grid_solution_values(lists:seq(1,9),grid_solution_values(GridOptions, []),2,[]),
+Pairs = find_option_cell(PairValues, GridOptions, []),
+
+%%Res = pair_evaluation([hd(Pairs)], Grids, UpdatedRows, UpdatedColumns, PairValues),
+
+solve(Tail,[UpdatedGrid|Tail], UpdatedRows, UpdatedColumns, [UpdatedGrid|Solution], Counter).
+
+%% need to stop.  notes lost, but concept ok.  how to share the pair routine
 
 %% function to calculate number of 0s in board
 count_zeros([], Counter) -> Counter;
@@ -134,24 +140,40 @@ count_grid_zeros([Grid|Tail], Counter) ->
  end.
 
 
+%% pair evaluation. see above.  return the cell we update, or nothing.
+pair_evaluation(_,_,_,_,[]) -> 0;
+%% this does not work.  but its nearly ready.  pairs can be more than 1 cell it seems.
+pair_evaluation(Pair, Grids, Rows, Columns, [{{CellX, CellY},_,_},{{PairCellX, PairCellY},_,_}|T]) ->
+ Direction = "horizontal",
+ if CellX == PairCellX -> Direction = "vertical";
+  true -> Direction = "horizontal"
+ end,
+
+ %% so need direction 
+ if Direction == "horizontal" -> ok;
+ true -> ok
+ end.
+
+
+
 %%
 grid_solution_values([], Acc) -> lists:reverse(Acc);
 grid_solution_values([{{X,Y},V}|T], Acc) ->
  grid_solution_values(T, lists:append(V, Acc)).
 
 %% create a list of our unique values
-unique_grid_solution_values([],_, Acc) -> lists:reverse(Acc);
-unique_grid_solution_values([Value|T], GridSolution, Acc) ->
+option_grid_solution_values([],_,_, Acc) -> lists:reverse(Acc);
+option_grid_solution_values([Value|T], GridSolution, Option, Acc) ->
 List = lists:filter(fun(X) -> X == Value end, GridSolution),
-if length(List) == 1 -> unique_grid_solution_values(T, GridSolution, lists:append(Acc, List));
-  true -> unique_grid_solution_values(T, GridSolution, Acc)
+if length(List) == Option -> option_grid_solution_values(T, GridSolution, Option, lists:append(Acc, List));
+  true -> option_grid_solution_values(T, GridSolution, Option, Acc)
 end.
 
 
 %% find the unique cell and update
-find_unique_cell([],_, Acc) -> lists:reverse(Acc);
-find_unique_cell([Unique|T], Grid, Acc) ->
-  find_unique_cell(T, Grid, [find_grid_cell(Grid, Unique)|Acc]).
+find_option_cell([],_, Acc) -> lists:reverse(Acc);
+find_option_cell([Unique|T], Grid, Acc) ->
+  find_option_cell(T, Grid, [find_grid_cell(Grid, Unique)|Acc]).
 
 %% check each grid.
 find_grid_cell([], _) -> erlang:error("value not in cell");
