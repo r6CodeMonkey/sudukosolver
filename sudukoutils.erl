@@ -52,22 +52,36 @@ pretty_print([GridMap|T]) ->
  pretty_print(T).
 
 solution_pretty_print([]) -> io:format("------------------------------------ ~n",[]);
-solution_pretty_print([Solution|T]) when length(T) == 8 -> 
+solution_pretty_print([SolutionX1, SolutionX2, SolutionX3, SolutionY1, SolutionY2, SolutionY3, SolutionZ1, SolutionZ2, SolutionZ3]) ->
   io:format("------------------------------------ ~n",[]),
   io:format("|        SOLUTION                   |~n",[]),
-  io:format("------------------------------------ ~n",[]),
-  sol_pp_helper(Solution),
-  solution_pretty_print(T);
-solution_pretty_print([Solution|T]) ->
-  io:format("------------------------------------ ~n",[]),
-  sol_pp_helper(Solution),
-  solution_pretty_print(T).
+  io:format("------------------------------------ ~n",[]), 
+  sol_pp_helper(SolutionX1, SolutionY1, SolutionZ1),
+  sol_pp_helper(SolutionX2, SolutionY2, SolutionZ2),
+  sol_pp_helper(SolutionX3, SolutionY3, SolutionZ3),
+  solution_pretty_print([]).
 
-sol_pp_helper([]) -> io:format("|~n",[]);
-sol_pp_helper([Sol|T]) ->
-  {{_,_},V,_} = Sol,
-  io:format("| ~w ",[V]),
-  sol_pp_helper(T).
+
+sol_pp_helper([],[],[]) -> io:format("",[]);
+sol_pp_helper([SolX1, SolX2, SolX3 |T1],
+              [Sol2X1, Sol2X2, Sol2X3|T2], 
+			  [Sol3X1, Sol3X2, Sol3X3|T3] ) ->
+  {{_,_},V1,_} = SolX1,
+  {{_,_},V2,_} = SolX2,
+  {{_,_},V3,_} = SolX3,
+  {{_,_},V4,_} = Sol2X1,
+  {{_,_},V5,_} = Sol2X2,
+  {{_,_},V6,_} = Sol2X3,
+  {{_,_},V7,_} = Sol3X1,
+  {{_,_},V8,_} = Sol3X2,
+  {{_,_},V9,_} = Sol3X3,
+  io:format("| ~w | ~w | ~w | ~w | ~w | ~w | ~w | ~w | ~w | ~n",[V1, V2, V3, V4, V5, V6, V7, V8, V9]),
+  io:format("------------------------------------ ~n",[]),
+
+  sol_pp_helper(T1, T2, T3).
+
+    
+
 
 %%test_solution_validity([]) -> io:format("~n",[]);
 %%test_solution_validity(Solution) ->

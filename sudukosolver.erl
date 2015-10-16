@@ -13,11 +13,10 @@ main() ->
  Rows = get_stacks(lists:seq(1,9), "Rows", GridMap, []),
  Columns = get_stacks(lists:seq(1,9), "Columns", GridMap, []),
  Grids = get_3by3_grids(2, GridMap, []),
- %%print(Columns),
  sudukoutils:pretty_print(GridMap),
- Solution = solve(Rows, Columns, Grids, []),
+ Solution = solve(Grids, Rows, Columns, []),
+ %% need to covert grids to rows again.  annoying.
  sudukoutils:solution_pretty_print(Solution).
- %%pretty_print(GridMap).
 
 
 
@@ -87,11 +86,9 @@ find_3by3_element(StartX,StartY,{{X,Y},_,_}) ->
  end. 
 
 
-
 %% filter grids by row
 filter_grids_by_row([], _, Filter) -> lists:reverse(Filter);
 filter_grids_by_row([CellX, CellY, CellZ|Tail], Grids, Filter) ->
-  %% to review seems to work of sorts. wont work for the grids in tail...fix later on.
  filter_grids_by_row(Tail, Grids, [filter_by_cell(Grids, CellX, [])|Filter]).
 
 %% filter list of lists by a cell
@@ -104,57 +101,90 @@ filter_by_cell([List|Tail], Cell, Filter) ->
 
 %% logic section.
 solve([],_,_,Solution) -> lists:reverse(Solution);
-solve([Row|Tail], Columns, Grids, Solution) -> 
- %% functions required. Firstly we need an exit case.
- %% test out row 1.. and its matching columns, and grids...then go crazy with the full board.
- %% for 1 row, all columns are applicable.  And vice versa, grids are only those grids that contain the row elements
- %% once row 1 is done, need to update the data, in order for the solution to be factored in for the next check.  not for today.
- RowSolution = test_solution(Row, Row, Columns, filter_grids_by_row(Row, Grids, []),  []),
-%% solve(Tail, Columns, Grids, [RowSolution|Solution]).
- solve(Tail, update_solution(RowSolution, Columns, []), update_solution(RowSolution, Grids, []), [RowSolution|Solution]).
+solve([Grid|Tail], Rows, Columns, Solution) -> 
+GridOptions = test_grids(Grid, Grid, Rows, Columns, []),
+UniqueValues = unique_grid_solution_values(lists:seq(1,9),grid_solution_values(GridOptions, []),[]),
+Cell = find_unique_cell(UniqueValues, GridOptions, []),
+
+UpdatedRows = update_maps(Rows, Cell, []),
+UpdatedColumns = update_maps(Columns, Cell, []),
+UpdatedGrid = update_map(Grid, Cell, []),
+solve(Tail,UpdatedRows, UpdatedColumns, [UpdatedGrid|Solution]).
+
+%%
+grid_solution_values([], Acc) -> lists:reverse(Acc);
+grid_solution_values([{{X,Y},V}|T], Acc) ->
+ grid_solution_values(T, lists:append(V, Acc)).
+
+%% create a list of our unique values
+unique_grid_solution_values([],_, Acc) -> lists:reverse(Acc);
+unique_grid_solution_values([Value|T], GridSolution, Acc) ->
+List = lists:filter(fun(X) -> X == Value end, GridSolution),
+if length(List) == 1 -> unique_grid_solution_values(T, GridSolution, lists:append(Acc, List));
+  true -> unique_grid_solution_values(T, GridSolution, Acc)
+end.
 
 
-%% update with solution
-update_solution([],Map, Acc) -> lists:reverse(Acc); 
-update_solution([Solution|RowSolution], [Map|Rest], Acc) ->
- %% we have a list of lists.
- update_solution(RowSolution, Rest, [update_map(Map, Solution, [])|Acc]).
+%% find the unique cell and update
+find_unique_cell([],_, Acc) -> lists:reverse(Acc);
+find_unique_cell([Unique|T], Grid, Acc) ->
+  find_unique_cell(T, Grid, [find_grid_cell(Grid, Unique)|Acc]).
+
+%% check each grid.
+find_grid_cell([], _) -> erlang:error("value not in cell");
+find_grid_cell([{{X,Y},V}|T], Value) ->  
+ Res = lists:any(fun(X) -> X == Value end, V),
+ if Res == true -> {{X,Y}, Value, "true"};
+  true -> find_grid_cell(T, Value)
+  end.
+
+%% working fine now.
+test_grids([],_,_,_,Acc) -> lists:reverse(Acc);
+test_grids([G|T], Grid, Rows, Columns, Acc) ->
+ test_grids(T, Grid, Rows, Columns, [test_grid(G,Grid,Rows, Columns) |Acc]).
+
+
+test_grid({{X,Y},V,F}, Grid, Rows, Columns) ->
+  Column = filter_by_cell(Columns, {{X,Y},V,F}, []),
+  Row = filter_by_cell(Rows, {{X,Y},V,F}, []),
+ if F == "false", V == 0 ->
+    {{X,Y},get_unique_values(lists:seq(1,9),Row, Column, Grid, [])};
+  true -> {{X,Y},[]} 
+  end.
+
+ 
+%% get unique values
+get_unique_values([],_,_,_, Acc) -> lists:reverse(Acc);
+get_unique_values([Value|T],Row,Column, Grid, Acc) -> 
+ Res = lists:any(fun({{X,Y},V,F}) -> V == Value end, lists:append([Column,Grid, Row])),
+ if Res == false -> get_unique_values(T, Row, Column, Grid, [Value|Acc]);
+ true -> get_unique_values(T, Row, Column, Grid, Acc)
+ end.
+ 
+ 
+%% need to review later if required.  Need to improve this for a list of solutions.
+
+%% update maps
+update_maps([],_, Acc) -> lists:reverse(Acc); 
+update_maps([Map|Rest], Solutions, Acc) ->
+ update_maps(Rest, Solutions, [update_map(Map, Solutions, [])|Acc]).
  
 update_map([], _, Acc) -> lists:reverse(Acc);
-update_map([Map|T], {{Sx,Sy},Sv,Sf}, Acc) ->
-  update_map(T, {{Sx,Sy},Sv,Sf}, [update_cell(Map,{{Sx,Sy},Sv,Sf})|Acc]).
+update_map({{X,Y},V,F}, Solutions, Acc) ->
+ update_map([], Solutions,[update_solution(Solutions, {{X,Y},V,F})|Acc]);
+update_map([Map|T], Solutions, Acc) ->
+ update_map(T, Solutions,[update_solution(Solutions, Map)|Acc]).
 
+ 
+update_solution([],{{X,Y},V,F}) ->  {{X,Y},V,F};
+update_solution([{{Sx,Sy},Sv,Sf}|Tail],{{X,Y},V,F}) ->  
+update_cell({{X,Y},V,F} , {{Sx,Sy},Sv,Sf}).
+  
 update_cell({{X,Y},V,F}, {{Sx,Sy},Sv,Sf}) ->
  if {X,Y} == {Sx,Sy} -> {{Sx,Sy},Sv,Sf};
  true -> {{X,Y},V,F}
  end.
 
-
-%% test row solution
-test_solution([],_,_,_, Solution) -> lists:reverse(Solution);
-test_solution([Row|T], Fixed, Columns, Grids, Solution) -> 
- {{X,Y},V,F} = Row,
- if F == "false", V == 0 -> 
-   Unique = get_unique_value(lists:seq(1,9),Fixed, Solution,
-                 filter_by_cell(Columns, Row, []),
-                 filter_by_cell(Grids, Row, []), {{X,Y},V,F}),
-   %% given this we now need to check against our column....
-   test_solution(T, Fixed, Columns, Grids, [Unique|Solution]); 
-   true -> test_solution(T,Fixed, Columns, Grids, [Row|Solution])
- end.
-
-%% get a unique value to the solution we need to add our unique column and grid (we can only be in one of each).
-get_unique_value([],_,_,_,_,NewValue) -> NewValue;
-get_unique_value([Value|Rest], Row, Solution, Column, Grid, NewValue) -> 
- {{X,Y},V,F} = NewValue,
- Res = lists:any(fun({{X,Y},V,F}) -> V == Value end, lists:append([Column, Solution,Grid, Row])),
-   if Res == false -> 
-%%   io:format("{~w,~w} value will be set to ~w ~n",[X,Y,Value]),
-   get_unique_value([],Row, Solution, Column, Grid, {{X,Y},Value,F});
-   true -> 
-%%    io:format("{~w,~w} no match value will be set to ~w ~n",[X,Y,0]),
-    get_unique_value(Rest,Row, Solution, Column, Grid, {{X,Y},0,F})
-  end.
 
 
 
