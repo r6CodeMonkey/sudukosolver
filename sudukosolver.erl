@@ -8,18 +8,13 @@ main(File) ->
   sudukoutils:test_board(Board),
 
   GridMap = sudukogrid:create_grid_map(Board, 1, []),
-  %%good bit. get our workable stacks.
+
   Rows = sudukogrid:get_stacks(lists:seq(1, 9), "Rows", GridMap, []),
   Columns = sudukogrid:get_stacks(lists:seq(1, 9), "Columns", GridMap, []),
   Grids = sudukogrid:get_3by3_grids(2, GridMap, []),
   sudukoutils:pretty_print(GridMap),
   Solution = solve(Grids, Grids, Rows, Columns, [], count_zeros(Grids, 0)),
-  %%solve(Grids, Grids, Rows, Columns, [], count_zeros(Grids, 0)).
-  %% need to covert grids to rows again.  annoying.
   sudukoutils:solution_pretty_print(Solution).
-
-
-
 
 %% logic section.
 solve([], Grids, Rows, Columns, Solution, Counter) ->
@@ -48,7 +43,6 @@ solve([Grid | Tail], Grids, Rows, Columns, Solution, Counter) ->
   UpdatedGrids = sudukogrid:update_maps(Grids, Cell, []),
 
   PairGridOptions = test_grids(UpdatedGrid, UpdatedGrid, UpdatedRows, UpdatedColumns, []),
-
   PairValues = option_grid_solution_values(lists:seq(1, 9), grid_solution_values(PairGridOptions, []), 2, []),
   Pairs = find_option_cell(PairValues, PairGridOptions, []),
 
@@ -57,7 +51,6 @@ solve([Grid | Tail], Grids, Rows, Columns, Solution, Counter) ->
    end,
 
   SolutionPairs = pair_evaluation(Pairs, UpdatedGrids, UpdatedRows, UpdatedColumns, PairGridOptions, []),
-
 
   if length(SolutionPairs) == 1 ->
 
@@ -76,7 +69,6 @@ solve([Grid | Tail], Grids, Rows, Columns, Solution, Counter) ->
     true -> solve(Tail, UpdatedGrids, UpdatedRows, UpdatedColumns, [UpdatedGrid | Solution], Counter)
   end.
 
-
 %% function to calculate number of 0s in board
 count_zeros([], Counter) -> Counter;
 count_zeros([Grid | Tail], Counter) ->
@@ -89,7 +81,6 @@ count_grid_zeros([Grid | Tail], Counter) ->
     true -> count_grid_zeros(Tail, Counter)
   end.
 
-
 %% pair evaluation.  needs more checks but as long as we only return 1 field in the list (called recursively) then that field is good to use
 pair_evaluation([], _, _,_,_, Acc) -> Acc;
 pair_evaluation([{{CellX, CellY}, V, F}, {{PairCellX, PairCellY}, PV, PF} | Rest], Grids,Rows, Columns, GridOptions, Acc) ->
@@ -101,10 +92,8 @@ pair_evaluation([{{CellX, CellY}, V, F}, {{PairCellX, PairCellY}, PV, PF} | Rest
   PairCellList = lists:filter(fun(X) ->
     X /= PV end, cell_solution_values(GridOptions, {{PairCellX, PairCellY}, PV, PF}, [])),
 
-
   UniqueOption = get_single_option(CellList,Grids,Direction, {{CellX,CellY},V,F}, Rows, Columns, 0),
   UniquePairOption = get_single_option(PairCellList,Grids,Direction,{{PairCellX,PairCellY},PV,PF}, Rows, Columns, 0),
-
 
   if UniquePairOption /= 0, UniqueOption == 0 ->
     pair_evaluation(Rest, Grids, Rows, Columns, GridOptions, [{{CellX, CellY}, V, "true"} | Acc]);
@@ -112,8 +101,6 @@ pair_evaluation([{{CellX, CellY}, V, F}, {{PairCellX, PairCellY}, PV, PF} | Rest
       pair_evaluation(Rest, Grids, Rows, Columns, GridOptions, [{{PairCellX, PairCellY}, PV, "true"} | Acc]);
     true -> pair_evaluation(Rest, Grids, Rows, Columns, GridOptions, Acc)
   end.
-
-
 
 %% got head on and bug fixed..need more info for evil board
 get_single_option([],_,_,_,_,_,UniqueOption) -> UniqueOption;
@@ -127,30 +114,23 @@ get_single_option([Option | T],Grids,Direction, {{X,Y}, V, F},Rows,Columns, Uniq
     true -> get_single_option(T,Grids,Direction,{{X,Y},V,F}, Rows, Columns, UniqueOption)
   end.
 
-
-
 count_options([],_,_,_,_,_, Count) -> Count;
 count_options([Grid | Tail],{{X,Y},V,F}, Direction, Rows, Columns, Option, Count) ->
   %% so given our direction, what rows do we want.  well we want our rows and cols based on any 0 value in our direction.
   Column = sudukogrid:filter_by_cell(Columns, {{X, Y}, V, F}, []),
   Row = sudukogrid:filter_by_cell(Rows, {{X, Y}, V, F}, []),
-
-
+%% ie we need get option row and column for the given free values (ie zero) in the grid for our row . columns based on direction
+%% something for tomorrow.!
   Res = lists:any(fun({{_, _}, V, _}) -> V == Option end, lists:append([Grid, Row, Column])),
 
   if Res == true -> count_options(Tail,{{X,Y},V,F}, Direction, Rows, Columns, Option, Count);
     true -> count_options(Tail, {{X,Y},F,V}, Direction, Rows, Columns, Option, Count + 1)
   end.
 
-%% ie we need get option row and column for the given free values (ie zero) in the grid for our row . columns based on direction
-%% something for tomorrow.!
-
-
 get_direction({{PairCellX, _}, _, _}, {{CellX, _}, _, _}) ->
   if CellX == PairCellX -> "horizontal";
     true -> "vertical"
   end.
-
 
 get_grid_centre(Val) ->
   if Val < 4 -> 2;
@@ -179,17 +159,12 @@ check_direction_grid(Grid, F) ->
     true -> []
   end.
 
-
-
-
-
 cell_solution_values([], _, Acc) -> lists:reverse(Acc);
 cell_solution_values([{{GX, GY}, GV} | T], {{X, Y}, V, F}, Acc) ->
 %%  io:format("cell solution values for {~w, ~w} ~n", [X,Y]),
   if GX == X, GY == Y -> cell_solution_values(T, {{X, Y}, V, F}, grid_solution_values([{{GX, GY}, GV}], Acc));
     true -> cell_solution_values(T, {{X, Y}, V, F}, Acc)
   end.
-
 
 %% check solutions options for the grid
 grid_solution_values([], Acc) -> lists:reverse(Acc);
@@ -204,7 +179,6 @@ option_grid_solution_values([Value | T], GridSolution, Option, Acc) ->
   if length(List) == Option -> option_grid_solution_values(T, GridSolution, Option, lists:append(Acc, [Value]));
     true -> option_grid_solution_values(T, GridSolution, Option, Acc)
   end.
-
 
 %% find the unique cell and update
 find_option_cell([], _, Acc) -> lists:reverse(Acc);
@@ -224,7 +198,6 @@ test_grids([], _, _, _, Acc) -> lists:reverse(Acc);
 test_grids([G | T], Grid, Rows, Columns, Acc) ->
   test_grids(T, Grid, Rows, Columns, [test_grid(G, Grid, Rows, Columns) | Acc]).
 
-
 test_grid({{X, Y}, V, F}, Grid, Rows, Columns) ->
   Column = sudukogrid:filter_by_cell(Columns, {{X, Y}, V, F}, []),
   Row = sudukogrid:filter_by_cell(Rows, {{X, Y}, V, F}, []),
@@ -232,7 +205,6 @@ test_grid({{X, Y}, V, F}, Grid, Rows, Columns) ->
     {{X, Y}, get_unique_values(lists:seq(1, 9), Row, Column, Grid, [])};
     true -> {{X, Y}, []}
   end.
-
 
 %% get unique values
 get_unique_values([], _, _, _, Acc) -> lists:reverse(Acc);
