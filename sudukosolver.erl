@@ -7,11 +7,11 @@ main(File) ->
   Board = sudukoutils:parse_board(Bin),
   sudukoutils:test_board(Board),
 
-  GridMap = create_grid_map(Board, 1, []),
+  GridMap = sudukogrid:create_grid_map(Board, 1, []),
   %%good bit. get our workable stacks.
-  Rows = get_stacks(lists:seq(1, 9), "Rows", GridMap, []),
-  Columns = get_stacks(lists:seq(1, 9), "Columns", GridMap, []),
-  Grids = get_3by3_grids(2, GridMap, []),
+  Rows = sudukogrid:get_stacks(lists:seq(1, 9), "Rows", GridMap, []),
+  Columns = sudukogrid:get_stacks(lists:seq(1, 9), "Columns", GridMap, []),
+  Grids = sudukogrid:get_3by3_grids(2, GridMap, []),
   sudukoutils:pretty_print(GridMap),
   Solution = solve(Grids, Grids, Rows, Columns, [], count_zeros(Grids, 0)),
   %%solve(Grids, Grids, Rows, Columns, [], count_zeros(Grids, 0)).
@@ -19,79 +19,6 @@ main(File) ->
   sudukoutils:solution_pretty_print(Solution).
 
 
-%% creates our tuples per item
-create_grid_map([], _, Acc) -> lists:reverse(Acc);
-create_grid_map([B1, B2, B3, B4, B5, B6, B7, B8, B9 | Rest], Y, Acc) ->
-  List = [B1, B2, B3, B4, B5, B6, B7, B8, B9],
-  create_grid_map(Rest, Y + 1, create_row(List, 1, Y, Acc)).
-
-create_row([], _, _, Acc) -> Acc;
-create_row([R | T], X, Y, Acc) ->
-  create_row(T, X + 1, Y, [{{X, Y}, R, is_fixed(R)} | Acc]).
-
-is_fixed(V) ->
-  if V == 0 -> "false";
-    true -> "true"
-  end.
-
-%%helper function to stacks.
-get_stacks([], _, _, Stacks) -> lists:reverse(Stacks);
-get_stacks([C | T], Type, Map, Stacks) ->
-  if Type == "Columns" -> get_stacks(T, Type, Map, [get_stack({C, -1}, Map, []) | Stacks]);
-    Type == "Rows" -> get_stacks(T, Type, Map, [get_stack({-1, C}, Map, []) | Stacks]);
-    true -> erlang:error("non supported type")
-  end.
-
-get_stack(_, [], Stack) -> lists:reverse(Stack);
-get_stack(Exp, [Map | T], Stack) ->
-  Resp = contains_value(Map, Exp),
-  if Resp == true ->
-    get_stack(Exp, T, [Map | Stack]);
-    true -> get_stack(Exp, T, Stack)
-  end.
-
-contains_value({{X, Y}, _, _}, {Col, Row}) ->
-  if X == Col -> true;
-    Y == Row -> true;
-    true -> false
-  end.
-
-%% help function to get our 3by3 grids
-get_3by3_grids(11, _, Stack) -> lists:reverse(Stack);
-get_3by3_grids(X, Board, Stack) ->
-  get_3by3_grids(X + 3, Board, [get_grids(X, 8, Board, []), get_grids(X, 5, Board, []), get_grids(X, 2, Board, []) | Stack]).
-
-get_grids(_, _, [], Stack) -> lists:reverse(Stack);
-get_grids(X, Y, [Board | T], Stack) ->
-  Resp = find_3by3_element(X, Y, Board),
-  if Resp == true -> get_grids(X, Y, T, [Board | Stack]);
-    true -> get_grids(X, Y, T, Stack)
-  end.
-
-
-%% need to find 3by 3.
-find_3by3_element(StartX, StartY, {{X, Y}, _, _}) ->
-
-  if X == StartX, Y == StartY -> true;
-    X == StartX + 1, Y == StartY -> true;
-    X == StartX - 1, Y == StartY -> true;
-    X == StartX, Y == StartY + 1 -> true;
-    X == StartX, Y == StartY - 1 -> true;
-    X == StartX - 1, Y == StartY + 1 -> true;
-    X == StartX + 1, Y == StartY - 1 -> true;
-    X == StartX + 1, Y == StartY + 1 -> true;
-    X == StartX - 1, Y == StartY - 1 -> true;
-    true -> false
-  end.
-
-
-%% filter list of lists by a cell
-filter_by_cell([], _, Filter) -> lists:reverse(Filter);
-filter_by_cell([List | Tail], Cell, Filter) ->
-  Res = lists:any(fun(X) -> X == Cell end, List),
-  if Res == true -> filter_by_cell(Tail, Cell, List);
-    true -> filter_by_cell(Tail, Cell, Filter)
-  end.
 
 
 %% logic section.
@@ -205,8 +132,8 @@ get_single_option([Option | T],Grids,Direction, {{X,Y}, V, F},Rows,Columns, Uniq
 count_options([],_,_,_,_,_, Count) -> Count;
 count_options([Grid | Tail],{{X,Y},V,F}, Direction, Rows, Columns, Option, Count) ->
   %% so given our direction, what rows do we want.  well we want our rows and cols based on any 0 value in our direction.
-  Column = filter_by_cell(Columns, {{X, Y}, V, F}, []),
-  Row = filter_by_cell(Rows, {{X, Y}, V, F}, []),
+  Column = sudukogrid:filter_by_cell(Columns, {{X, Y}, V, F}, []),
+  Row = sudukogrid:filter_by_cell(Rows, {{X, Y}, V, F}, []),
 
 
   Res = lists:any(fun({{_, _}, V, _}) -> V == Option end, lists:append([Grid, Row, Column])),
@@ -240,7 +167,7 @@ get_direction_grids([Grid | T], Direction, Cell, CentreX, CentreY, Acc) ->
   end.
 
 get_direction_grid(Grid, Direction, Cell, CentreX, CentreY) ->
-  Filter = filter_this_direction_grid(Grid, fun({{X, Y}, V, F}) -> {X, Y} == Cell end),
+  Filter = sudukogrid:filter_this_direction_grid(Grid, fun({{X, Y}, V, F}) -> {X, Y} == Cell end),
 
   if Direction == "vertical" -> check_direction_grid(Filter, fun({{X, Y}, V, F}) -> X == CentreX end);
     true -> check_direction_grid(Filter, fun({{X, Y}, V, F}) -> Y == CentreY end)
@@ -252,11 +179,7 @@ check_direction_grid(Grid, F) ->
     true -> []
   end.
 
-filter_this_direction_grid(Grid, F) ->
-  Res = lists:any(F, Grid),
-  if Res == true -> [];
-    true -> Grid
-  end.
+
 
 
 
@@ -303,8 +226,8 @@ test_grids([G | T], Grid, Rows, Columns, Acc) ->
 
 
 test_grid({{X, Y}, V, F}, Grid, Rows, Columns) ->
-  Column = filter_by_cell(Columns, {{X, Y}, V, F}, []),
-  Row = filter_by_cell(Rows, {{X, Y}, V, F}, []),
+  Column = sudukogrid:filter_by_cell(Columns, {{X, Y}, V, F}, []),
+  Row = sudukogrid:filter_by_cell(Rows, {{X, Y}, V, F}, []),
   if F == "false", V == 0 ->
     {{X, Y}, get_unique_values(lists:seq(1, 9), Row, Column, Grid, [])};
     true -> {{X, Y}, []}

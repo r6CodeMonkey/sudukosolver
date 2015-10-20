@@ -24,8 +24,18 @@
       <file leaf-file-name="sudukosolver.erl" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/sudukosolver.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.4988864">
-              <caret line="215" column="6" selection-start-line="215" selection-start-column="6" selection-end-line="215" selection-end-column="6" />
+            <state vertical-scroll-proportion="0.33184856">
+              <caret line="169" column="17" selection-start-line="169" selection-start-column="17" selection-end-line="169" selection-end-column="17" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="sudukogrid.erl" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/sudukogrid.erl">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="-5.483333">
+              <caret line="75" column="6" selection-start-line="75" selection-start-column="6" selection-end-line="75" selection-end-column="6" />
               <folding />
             </state>
           </provider>
@@ -62,6 +72,7 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/sudukosolver.erl" />
+        <option value="$PROJECT_DIR$/sudukogrid.erl" />
       </list>
     </option>
   </component>
@@ -396,10 +407,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/sudukogrid.erl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-5.483333">
+          <caret line="75" column="6" selection-start-line="75" selection-start-column="6" selection-end-line="75" selection-end-column="6" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/sudukosolver.erl">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.4988864">
-          <caret line="215" column="6" selection-start-line="215" selection-start-column="6" selection-end-line="215" selection-end-column="6" />
+        <state vertical-scroll-proportion="0.33184856">
+          <caret line="169" column="17" selection-start-line="169" selection-start-column="17" selection-end-line="169" selection-end-column="17" />
           <folding />
         </state>
       </provider>
