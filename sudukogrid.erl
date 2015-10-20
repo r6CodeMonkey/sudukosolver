@@ -80,3 +80,22 @@ filter_this_direction_grid(Grid, F) ->
   if Res == true -> [];
     true -> Grid
   end.
+
+%% update maps
+update_maps([], _, Acc) -> lists:reverse(Acc);
+update_maps([Map | Rest], Solutions, Acc) ->
+  update_maps(Rest, Solutions, [update_map(Map, Solutions, []) | Acc]).
+
+update_map([], _, Acc) -> lists:reverse(Acc);
+update_map([Map | T], Solutions, Acc) ->
+  update_map(T, Solutions, [update_solution(Solutions, Map) | Acc]).
+
+
+update_solution([], {{X, Y}, V, F}) -> {{X, Y}, V, F};
+update_solution([{{Sx, Sy}, Sv, Sf} | Tail], {{X, Y}, V, F}) ->
+  update_cell({{X, Y}, V, F}, {{Sx, Sy}, Sv, Sf}).
+
+update_cell({{X, Y}, V, F}, {{Sx, Sy}, Sv, Sf}) ->
+  if {X, Y} == {Sx, Sy} -> {{Sx, Sy}, Sv, Sf};
+    true -> {{X, Y}, V, F}
+  end.

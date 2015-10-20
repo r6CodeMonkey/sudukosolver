@@ -40,12 +40,12 @@ solve([Grid | Tail], Grids, Rows, Columns, Solution, Counter) ->
     true -> io:format("no match ~n")
   end,
 
-  UpdatedRows = update_maps(Rows, Cell, []),
-  UpdatedColumns = update_maps(Columns, Cell, []),
-  UpdatedGrid = update_map(Grid, Cell, []),
+  UpdatedRows = sudukogrid:update_maps(Rows, Cell, []),
+  UpdatedColumns = sudukogrid:update_maps(Columns, Cell, []),
+  UpdatedGrid = sudukogrid:update_map(Grid, Cell, []),
 
 %% need to update our grid, basically by replacing the updated grid and grid.
-  UpdatedGrids = update_maps(Grids, Cell, []),
+  UpdatedGrids = sudukogrid:update_maps(Grids, Cell, []),
 
   PairGridOptions = test_grids(UpdatedGrid, UpdatedGrid, UpdatedRows, UpdatedColumns, []),
 
@@ -67,10 +67,10 @@ solve([Grid | Tail], Grids, Rows, Columns, Solution, Counter) ->
       true -> io:format("no match ~n")
     end,
 
-    PairUpdatedRows = update_maps(UpdatedRows, SolutionPairs, []),
-    PairUpdatedColumns = update_maps(UpdatedColumns, SolutionPairs, []),
-    PairUpdatedGrid = update_map(UpdatedGrid, SolutionPairs, []),
-    PairUpdatedGrids = update_maps(UpdatedGrids, SolutionPairs, []),
+    PairUpdatedRows = sudukogrid:update_maps(UpdatedRows, SolutionPairs, []),
+    PairUpdatedColumns = sudukogrid:update_maps(UpdatedColumns, SolutionPairs, []),
+    PairUpdatedGrid = sudukogrid:update_map(UpdatedGrid, SolutionPairs, []),
+    PairUpdatedGrids = sudukogrid:update_maps(UpdatedGrids, SolutionPairs, []),
     solve(Tail, PairUpdatedGrids, PairUpdatedRows, PairUpdatedColumns, [PairUpdatedGrid | Solution], Counter);
 
     true -> solve(Tail, UpdatedGrids, UpdatedRows, UpdatedColumns, [UpdatedGrid | Solution], Counter)
@@ -241,47 +241,4 @@ get_unique_values([Value | T], Row, Column, Grid, Acc) ->
   if Res == false -> get_unique_values(T, Row, Column, Grid, [Value | Acc]);
     true -> get_unique_values(T, Row, Column, Grid, Acc)
   end.
-
-
-%% need to review later if required.  Need to improve this for a list of solutions.
-
-%% update maps
-update_maps([], _, Acc) -> lists:reverse(Acc);
-update_maps([Map | Rest], Solutions, Acc) ->
-  update_maps(Rest, Solutions, [update_map(Map, Solutions, []) | Acc]).
-
-update_map([], _, Acc) -> lists:reverse(Acc);
-update_map([Map | T], Solutions, Acc) ->
-  update_map(T, Solutions, [update_solution(Solutions, Map) | Acc]).
-
-
-update_solution([], {{X, Y}, V, F}) -> {{X, Y}, V, F};
-update_solution([{{Sx, Sy}, Sv, Sf} | Tail], {{X, Y}, V, F}) ->
-  update_cell({{X, Y}, V, F}, {{Sx, Sy}, Sv, Sf}).
-
-update_cell({{X, Y}, V, F}, {{Sx, Sy}, Sv, Sf}) ->
-  if {X, Y} == {Sx, Sy} -> {{Sx, Sy}, Sv, Sf};
-    true -> {{X, Y}, V, F}
-  end.
-
-
-
-
-
-
- 
-
-
-
-
-
-   
-
-
-
-
-
-
-
-
 
