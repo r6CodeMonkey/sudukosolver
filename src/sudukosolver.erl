@@ -16,13 +16,39 @@ main(File) ->
   Solution = solve(Grids, Grids, Rows, Columns, [], count_zeros(Grids, 0)),
   sudukoutils:solution_pretty_print(Solution).
 
+
+%%pair solve.  needs to go later...bingo,
+pair_solve([],_,_,_,Solution) -> lists:reverse(Solution);
+pair_solve([Grid|Tail], Grids, Rows, Columns, Solution) ->
+
+  PairGridOptions = test_grids(Grid, Grid, Rows, Columns, []),
+  PairValues = option_grid_solution_values(lists:seq(1, 9), grid_solution_values(PairGridOptions, []), 2, []),
+  Pairs = find_option_cell(PairValues, PairGridOptions, []),
+
+
+  SolutionPairs = pair_evaluation(Pairs, Grids, Rows, Columns, PairGridOptions, []),
+
+  if length(SolutionPairs) == 1 -> io:format("pair is ~w ~n", [hd(SolutionPairs)]);
+    true -> io:format("")
+  end,
+
+  PairUpdatedRows = sudukogrid:update_maps(Rows, SolutionPairs, []),
+  PairUpdatedColumns = sudukogrid:update_maps(Columns, SolutionPairs, []),
+  PairUpdatedGrid = sudukogrid:update_map(Grid, SolutionPairs, []),
+  PairUpdatedGrids = sudukogrid:update_maps(Grids, SolutionPairs, []),
+  pair_solve(Tail, PairUpdatedGrids, PairUpdatedRows, PairUpdatedColumns, [PairUpdatedGrid | Solution]).
+
+
 %% logic section.
 solve([], Grids, Rows, Columns, Solution, Counter) ->
+  %% need to update our grids and rows with each solution and return them too.  annoying.
   ZeroCounter = count_zeros(Solution, 0),
   io:format("Zero counter ~w and Counter ~w ~n", [ZeroCounter, Counter]),
   if ZeroCounter < Counter ->
     solve(lists:reverse(Solution), Grids, Rows, Columns, [], ZeroCounter);
-    true -> lists:reverse(Solution)
+    ZeroCounter == 0 -> lists:reverse(Solution);
+    true ->   pair_solve(lists:reverse(Solution), Grids, Rows, Columns, [])
+
   end;
 solve([Grid | Tail], Grids, Rows, Columns, Solution, Counter) ->
   GridOptions = test_grids(Grid, Grid, Rows, Columns, []),
@@ -30,7 +56,7 @@ solve([Grid | Tail], Grids, Rows, Columns, Solution, Counter) ->
   Cell = find_option_cell(UniqueValues, GridOptions, []),
 
   if length(Cell) > 0 ->
-    {{X1, Y1}, V1, F1} = hd(Cell),
+    {{X1, Y1}, V1, _} = hd(Cell),
     io:format("unique solution {~w,~w} ~w ~n", [X1, Y1, V1]);
     true -> io:format("no match ~n")
   end,
@@ -38,36 +64,9 @@ solve([Grid | Tail], Grids, Rows, Columns, Solution, Counter) ->
   UpdatedRows = sudukogrid:update_maps(Rows, Cell, []),
   UpdatedColumns = sudukogrid:update_maps(Columns, Cell, []),
   UpdatedGrid = sudukogrid:update_map(Grid, Cell, []),
-
-%% need to update our grid, basically by replacing the updated grid and grid.
   UpdatedGrids = sudukogrid:update_maps(Grids, Cell, []),
 
-  PairGridOptions = test_grids(UpdatedGrid, UpdatedGrid, UpdatedRows, UpdatedColumns, []),
-  PairValues = option_grid_solution_values(lists:seq(1, 9), grid_solution_values(PairGridOptions, []), 2, []),
-  Pairs = find_option_cell(PairValues, PairGridOptions, []),
-
-  if length(PairValues) == 1 -> io:format("pair is ~w ~n", [hd(PairValues)]);
-    true -> io:format("")
-   end,
-
-  SolutionPairs = pair_evaluation(Pairs, UpdatedGrids, UpdatedRows, UpdatedColumns, PairGridOptions, []),
-
-  if length(SolutionPairs) == 1 ->
-
-    if length(SolutionPairs) > 0 ->
-      {{X, Y}, V, F} = hd(SolutionPairs),
-      io:format("pair solution {~w,~w} ~w ~n", [X, Y, V]);
-      true -> io:format("no match ~n")
-    end,
-
-    PairUpdatedRows = sudukogrid:update_maps(UpdatedRows, SolutionPairs, []),
-    PairUpdatedColumns = sudukogrid:update_maps(UpdatedColumns, SolutionPairs, []),
-    PairUpdatedGrid = sudukogrid:update_map(UpdatedGrid, SolutionPairs, []),
-    PairUpdatedGrids = sudukogrid:update_maps(UpdatedGrids, SolutionPairs, []),
-    solve(Tail, PairUpdatedGrids, PairUpdatedRows, PairUpdatedColumns, [PairUpdatedGrid | Solution], Counter);
-
-    true -> solve(Tail, UpdatedGrids, UpdatedRows, UpdatedColumns, [UpdatedGrid | Solution], Counter)
-  end.
+  solve(Tail, UpdatedGrids, UpdatedRows, UpdatedColumns, [UpdatedGrid | Solution], Counter).
 
 %% function to calculate number of 0s in board
 count_zeros([], Counter) -> Counter;
@@ -86,14 +85,20 @@ pair_evaluation([], _, _,_,_, Acc) -> Acc;
 pair_evaluation([{{CellX, CellY}, V, F}, {{PairCellX, PairCellY}, PV, PF} | Rest], Grids,Rows, Columns, GridOptions, Acc) ->
 
   Direction = get_direction({{CellX, CellY}, V, F}, {{PairCellX, PairCellY}, PV, PF}),
-  io:format("direction ~s ~n", [Direction]),
+  io:format("direction ~s for ~w ~w ~n", [Direction, V, PV]),
 
-  CellList = lists:filter(fun(X) -> X /= V end, cell_solution_values(GridOptions, {{CellX, CellY}, V, F}, [])),
-  PairCellList = lists:filter(fun(X) ->
-    X /= PV end, cell_solution_values(GridOptions, {{PairCellX, PairCellY}, PV, PF}, [])),
+ %% CellList = lists:filter(fun(X) -> X /= V end, cell_solution_values(GridOptions, {{CellX, CellY}, V, F}, [])),
 
-  UniqueOption = get_single_option(CellList,Grids,Direction, {{CellX,CellY},V,F}, Rows, Columns, 0),
-  UniquePairOption = get_single_option(PairCellList,Grids,Direction,{{PairCellX,PairCellY},PV,PF}, Rows, Columns, 0),
+ %% io:format("cell list ~w ~w ~n", [hd(CellList), tl(CellList)]),
+
+ %% PairCellList = lists:filter(fun(X) ->
+ %%   X /= PV end, cell_solution_values(GridOptions, {{PairCellX, PairCellY}, PV, PF}, [])),
+
+
+  UniqueOption = get_single_option(V,Grids,Direction, {{CellX,CellY},V,F}, Rows, Columns, 0),
+  UniquePairOption = get_single_option(PV,Grids,Direction,{{PairCellX,PairCellY},PV,PF}, Rows, Columns, 0),
+
+  io:format("option count ~w vs pair option count ~w for option{~w,~w} and pair{~w,~w} for value ~w ~n",[UniqueOption, UniquePairOption, CellX, CellY, PairCellX, PairCellY, V]),
 
   if UniquePairOption /= 0, UniqueOption == 0 ->
     pair_evaluation(Rest, Grids, Rows, Columns, GridOptions, [{{CellX, CellY}, V, "true"} | Acc]);
@@ -103,29 +108,53 @@ pair_evaluation([{{CellX, CellY}, V, F}, {{PairCellX, PairCellY}, PV, PF} | Rest
   end.
 
 %% got head on and bug fixed..need more info for evil board
-get_single_option([],_,_,_,_,_,UniqueOption) -> UniqueOption;
+%%get_single_option([],_,_,_,_,_,UniqueOption) -> UniqueOption;
 
-get_single_option([Option | T],Grids,Direction, {{X,Y}, V, F},Rows,Columns, UniqueOption) ->
+get_single_option(Option,Grids,Direction, {{X,Y}, V, F},Rows,Columns, UniqueOption) ->
   DirectionGrids  = get_direction_grids(Grids, Direction, {X, Y}, get_grid_centre(X), get_grid_centre(Y), []),
 
   CountOptions = count_options(DirectionGrids,{{X,Y},V,F},Direction, Rows, Columns, Option, 0),
- %% io:format("count options ~w grid length ~w ~n", [CountOptions, length(Grids)]),
-  if CountOptions > 0 -> get_single_option(T,Grids,Direction,{{X,Y},V,F},Rows, Columns,CountOptions+UniqueOption);
-    true -> get_single_option(T,Grids,Direction,{{X,Y},V,F}, Rows, Columns, UniqueOption)
+
+  io:format("count options ~w for value ~w ~n", [CountOptions, Option]),
+  if CountOptions > 0 -> CountOptions + UniqueOption;
+    true -> UniqueOption
   end.
+%%  if CountOptions > 0 -> get_single_option(T,Grids,Direction,{{X,Y},V,F},Rows, Columns,CountOptions+UniqueOption);
+%%    true -> get_single_option(T,Grids,Direction,{{X,Y},V,F}, Rows, Columns, UniqueOption)
+%%  end.
 
 count_options([],_,_,_,_,_, Count) -> Count;
 count_options([Grid | Tail],{{X,Y},V,F}, Direction, Rows, Columns, Option, Count) ->
   %% so given our direction, what rows do we want.  well we want our rows and cols based on any 0 value in our direction.
-  Column = sudukogrid:filter_by_cell(Columns, {{X, Y}, V, F}, []),
-  Row = sudukogrid:filter_by_cell(Rows, {{X, Y}, V, F}, []),
-%% ie we need get option row and column for the given free values (ie zero) in the grid for our row . columns based on direction
-%% something for tomorrow.!
-  Res = lists:any(fun({{_, _}, V, _}) -> V == Option end, lists:append([Grid, Row, Column])),
+  OptionColumn = get_option_for_grid_column(Grid, Y, Columns, {{X,Y},V,F}, []),
+  OptionRow = get_option_for_grid_row(Grid, X, Rows, {{X,Y},V,F}, []),
 
-  if Res == true -> count_options(Tail,{{X,Y},V,F}, Direction, Rows, Columns, Option, Count);
-    true -> count_options(Tail, {{X,Y},F,V}, Direction, Rows, Columns, Option, Count + 1)
+  io:format("the lists ~w ~n ", [length(lists:append([Grid,OptionColumn, OptionRow]))]),
+
+
+  Res = lists:any(fun({{_, _}, V, _}) -> V == Option end, lists:append([Grid,OptionColumn, OptionRow])),
+
+  if Res == true ->
+    io:format("has value ~w for option ~w ~n", [hd(Grid),Option]),
+    count_options(Tail,{{X,Y},V,F}, Direction, Rows, Columns, Option, Count);
+    true ->
+      io:format("has not got value ~w for option ~w ~n", [hd(Grid),Option]),
+      count_options(Tail, {{X,Y},F,V}, Direction, Rows, Columns, Option, Count + 1)
   end.
+
+get_option_for_grid_column([],_,_,_,Acc) -> lists:reverse(Acc);
+get_option_for_grid_column([{{X,Y},V,F}|Tail], FixedAxis, Options, Cell, Acc) ->
+  if V == 0, FixedAxis == X  -> get_option_for_grid_column(Tail,FixedAxis, Options,Cell, lists:append([Acc,sudukogrid:filter_by_cell(Options,{{X,Y},V,F},[])]));
+    true -> get_option_for_grid_column(Tail, FixedAxis, Options, Cell, Acc)
+  end.
+%% we need to also look at each row or column for our 0 value space in the grid. on our same axis.
+%% note: we need to maintain our axis.
+get_option_for_grid_row([],_,_,_,Acc) -> lists:reverse(Acc);
+get_option_for_grid_row([{{X,Y},V,F}|Tail], FixedAxis, Options, Cell, Acc) ->
+ if V == 0, FixedAxis == Y  -> get_option_for_grid_row(Tail,FixedAxis, Options,Cell, lists:append([Acc,sudukogrid:filter_by_cell(Options,{{X,Y},V,F},[])]));
+   true -> get_option_for_grid_row(Tail, FixedAxis, Options, Cell, Acc)
+ end.
+
 
 get_direction({{PairCellX, _}, _, _}, {{CellX, _}, _, _}) ->
   if CellX == PairCellX -> "horizontal";
